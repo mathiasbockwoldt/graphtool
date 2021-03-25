@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+div {
+	width: 1200px;
+	height: 800px;
+}
+
+svg {
+	width: 1000px;
+	height: 600px;
+	background-color: lightgrey;
+}
+
+</style>
+<body>
+<div id="canvas"></div>
+<script>
+
+const distance = 10;
+
+let num_nodes = 0;
+let num_lines = 0;
+
+let ev_dx = 0;
+let ev_dy = 0;
+let is_moving = null;
+
+
+function start(event) {
+	is_moving = event.target;
+	ev_dx = event.target.getAttribute("cx") - event.clientX;
+	ev_dy = event.target.getAttribute("cy") - event.clientY;
+}
+
+
+function move(event) {
+	if(is_moving) {
+		const new_x = event.clientX + ev_dx;
+		const new_y = event.clientY + ev_dy;
+
+		is_moving.setAttribute("cx", new_x);
+		is_moving.setAttribute("cy", new_y);
+
+		const num = is_moving.getAttribute("num");
+
+		for(let i = 0; i < starts[num].length; i++) {
+			calc_line_pos(starts[num][i]);
+		}
+
+		for(let i = 0; i < ends[num].length; i++) {
+			calc_line_pos(ends[num][i]);
+		}
+	}
+}
+
+
+function end(event) {
+	is_moving = null;
+}
+
+
+function calc_line_pos(line) {
+	const from = nodes[line.getAttribute("from")];
+	const to = nodes[line.getAttribute("to")];
+
+	const from_x = Number(from.getAttribute("cx"));
+	const from_y = Number(from.getAttribute("cy"));
+	const from_r = distance + Number(from.getAttribute("r"));
+	const to_x = Number(to.getAttribute("cx"));
+	const to_y = Number(to.getAttribute("cy"));
+	const to_r = distance + Number(to.getAttribute("r"));
+
+	const angle = Math.atan2(
+		from_x - to_x,
+		from_y - to_y
+	);
+
+	line.setAttribute("x1", from_x - from_r * Math.sin(angle));
+	line.setAttribute("y1", from_y - from_r * Math.cos(angle));
+	line.setAttribute("x2", to_x + to_r * Math.sin(angle));
+	line.setAttribute("y2", to_y + to_r * Math.cos(angle));
+}
+
+
+function add_circle(cx, cy, r, stroke) {
+	const circle = document.createElementNS("http://www.w3.org/2000/svg", 'circle');
+	circle.setAttribute("cx", cx);
+	circle.setAttribute("cy", cy);
+	circle.setAttribute("r", r);
+	circle.setAttribute("num", num_nodes);
+	circle.style.stroke = stroke;
+	circle.style.fill = "white";
+	circle.style.fillOpacity = "0.4";
+	circle.addEventListener("touchstart", start);
+	circle.addEventListener("mousedown",  start);
+	circle.addEventListener("touchend",   end);
+	circle.addEventListener("touchcancel",end);
+	circle.addEventListener("mouseup",    end);
+	canvas.appendChild(circle);
+
+	starts.push([]);
+	ends.push([]);
+	nodes.push(circle);
+	num_nodes++;
+}
+
+function add_line(from, to) {
+	const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+	line.style.stroke = "black";
+
+	const from_num = from.getAttribute("num");
+	const to_num = to.getAttribute("num");
+	line.setAttribute("from", from_num);
+	line.setAttribute("to", to_num);
+
+	starts[from_num].push(line);
+	ends[to_num].push(line);
+
+	calc_line_pos(line);
+	canvas.appendChild(line);
+
+	lines.push(line);
+	num_lines++;
+}
+
+
+const canvas = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
+canvas.setAttribute("width", "1000");
+canvas.setAttribute("height", "600");
+document.getElementById('canvas').appendChild(canvas);
+const canvas_pos = canvas.getBoundingClientRect();
+canvas.addEventListener("touchmove",  move);
+canvas.addEventListener("mousemove",  move);
+
+const nodes = [];
+const lines = [];
+const ends = [];
+const starts = [];
+
+add_circle(35, 145, 20, "green");
+add_circle(150, 90, 35, "red");
+//add_circle(340, 200, 50, "blue");
+//add_circle(600, 75, 5, "yellow");
+add_line(nodes[0], nodes[1]);
+//add_line(nodes[0], nodes[2]);
+//add_line(nodes[3], nodes[0]);
+//add_line(nodes[2], nodes[1]);
+
+</script>
+</body>
+</html>
