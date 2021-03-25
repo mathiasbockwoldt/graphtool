@@ -3,8 +3,8 @@
 <meta charset="utf-8">
 <title>Graph tool</title>
 <style>
-svg {
-	background-color: lightgrey;
+body {
+	margin: 0px;
 }
 </style>
 </head>
@@ -20,7 +20,7 @@ let num_lines = 0;
 
 let ev_dx = 0;
 let ev_dy = 0;
-let is_moving = null;
+let moving_node = null;
 
 
 function touch_start(event) {
@@ -29,7 +29,7 @@ function touch_start(event) {
 		return;
 	}
 
-	is_moving = event.target;
+	moving_node = event.target;
 
 	console.log(event);
 
@@ -39,7 +39,7 @@ function touch_start(event) {
 
 
 function mouse_start(event) {
-	is_moving = event.target;
+	moving_node = event.target;
 
 	ev_dx = event.target.getAttribute("cx") - event.clientX;
 	ev_dy = event.target.getAttribute("cy") - event.clientY;
@@ -52,7 +52,7 @@ function touch_move(event) {
 		return;
 	}
 
-	if(is_moving) {
+	if(moving_node) {
 		move(
 			event.touches[event.which].clientX + ev_dx,
 			event.touches[event.which].clientY + ev_dy
@@ -62,7 +62,7 @@ function touch_move(event) {
 
 
 function mouse_move(event) {
-	if(is_moving) {
+	if(moving_node) {
 		move(
 			event.clientX + ev_dx,
 			event.clientY + ev_dy
@@ -72,10 +72,10 @@ function mouse_move(event) {
 
 
 function move(new_x, new_y) {
-	is_moving.setAttribute("cx", new_x);
-	is_moving.setAttribute("cy", new_y);
+	moving_node.setAttribute("cx", new_x);
+	moving_node.setAttribute("cy", new_y);
 
-	const num = is_moving.getAttribute("num");
+	const num = moving_node.getAttribute("num");
 
 	for(let i = 0; i < starts[num].length; i++) {
 		calc_line_pos(starts[num][i]);
@@ -88,7 +88,7 @@ function move(new_x, new_y) {
 
 
 function end(event) {
-	is_moving = null;
+	moving_node = null;
 }
 
 
@@ -115,14 +115,14 @@ function calc_line_pos(line) {
 }
 
 
-function add_circle(cx, cy, r, stroke) {
+function add_circle(cx, cy, r, fill, stroke="black") {
 	const circle = document.createElementNS("http://www.w3.org/2000/svg", 'circle');
 	circle.setAttribute("cx", cx);
 	circle.setAttribute("cy", cy);
 	circle.setAttribute("r", r);
 	circle.setAttribute("num", num_nodes);
 	circle.style.stroke = stroke;
-	circle.style.fill = "white";
+	circle.style.fill = fill;
 	circle.style.fillOpacity = "0.4";
 	circle.addEventListener("touchstart", touch_start);
 	circle.addEventListener("mousedown", mouse_start);
@@ -156,10 +156,18 @@ function add_line(from, to) {
 	num_lines++;
 }
 
+let window_width = window.innerWidth ||
+	document.documentElement.clientWidth ||
+	document.body.clientWidth;
+
+let window_height = window.innerHeight ||
+	document.documentElement.clientHeight ||
+	document.body.clientHeight;
 
 const canvas = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
-canvas.setAttribute("width", "1000");
-canvas.setAttribute("height", "600");
+// Note: The following does not scale with chaning window sizes.
+canvas.setAttribute("width", window_width - 10);
+canvas.setAttribute("height", window_height - 10);
 document.getElementById('canvas').appendChild(canvas);
 const canvas_pos = canvas.getBoundingClientRect();
 canvas.addEventListener("touchmove",  touch_move);
@@ -173,7 +181,7 @@ const starts = [];
 add_circle(35, 145, 20, "green");
 add_circle(150, 90, 35, "red");
 add_circle(340, 200, 50, "blue");
-add_circle(600, 75, 5, "yellow");
+add_circle(600, 75, 5, "black");
 add_line(nodes[0], nodes[1]);
 add_line(nodes[0], nodes[2]);
 add_line(nodes[3], nodes[0]);
