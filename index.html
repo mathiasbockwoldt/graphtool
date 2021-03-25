@@ -28,30 +28,66 @@ let ev_dy = 0;
 let is_moving = null;
 
 
-function start(event) {
+function touch_start(event) {
+	if(event.which !== 0) {
+		// So far, don't accept second finger
+		return;
+	}
+
 	is_moving = event.target;
+
+	console.log(event);
+
+	ev_dx = event.target.getAttribute("cx") - event.touches[event.which].clientX;
+	ev_dy = event.target.getAttribute("cy") - event.touches[event.which].clientY;
+}
+
+
+function mouse_start(event) {
+	is_moving = event.target;
+
 	ev_dx = event.target.getAttribute("cx") - event.clientX;
 	ev_dy = event.target.getAttribute("cy") - event.clientY;
 }
 
 
-function move(event) {
+function touch_move(event) {
+	if(event.which !== 0) {
+		// So far, don't accept second finger
+		return;
+	}
+
 	if(is_moving) {
-		const new_x = event.clientX + ev_dx;
-		const new_y = event.clientY + ev_dy;
+		move(
+			event.touches[event.which].clientX + ev_dx,
+			event.touches[event.which].clientY + ev_dy
+		);
+	}
+}
 
-		is_moving.setAttribute("cx", new_x);
-		is_moving.setAttribute("cy", new_y);
 
-		const num = is_moving.getAttribute("num");
+function mouse_move(event) {
+	if(is_moving) {
+		move(
+			event.clientX + ev_dx,
+			event.clientY + ev_dy
+		);
+	}
+}
 
-		for(let i = 0; i < starts[num].length; i++) {
-			calc_line_pos(starts[num][i]);
-		}
 
-		for(let i = 0; i < ends[num].length; i++) {
-			calc_line_pos(ends[num][i]);
-		}
+function move(new_x, new_y) {
+	is_moving.setAttribute("cx", new_x);
+	is_moving.setAttribute("cy", new_y);
+
+	const num = is_moving.getAttribute("num");
+
+	for(let i = 0; i < starts[num].length; i++) {
+		calc_line_pos(starts[num][i]);
+	}
+
+	for(let i = 0; i < ends[num].length; i++) {
+		calc_line_pos(ends[num][i]);
 	}
 }
 
@@ -93,11 +129,11 @@ function add_circle(cx, cy, r, stroke) {
 	circle.style.stroke = stroke;
 	circle.style.fill = "white";
 	circle.style.fillOpacity = "0.4";
-	circle.addEventListener("touchstart", start);
-	circle.addEventListener("mousedown",  start);
-	circle.addEventListener("touchend",   end);
+	circle.addEventListener("touchstart", touch_start);
+	circle.addEventListener("mousedown", mouse_start);
+	circle.addEventListener("touchend", end);
 	circle.addEventListener("touchcancel",end);
-	circle.addEventListener("mouseup",    end);
+	circle.addEventListener("mouseup", end);
 	canvas.appendChild(circle);
 
 	starts.push([]);
@@ -131,8 +167,8 @@ canvas.setAttribute("width", "1000");
 canvas.setAttribute("height", "600");
 document.getElementById('canvas').appendChild(canvas);
 const canvas_pos = canvas.getBoundingClientRect();
-canvas.addEventListener("touchmove",  move);
-canvas.addEventListener("mousemove",  move);
+canvas.addEventListener("touchmove",  touch_move);
+canvas.addEventListener("mousemove",  mouse_move);
 
 const nodes = [];
 const lines = [];
@@ -141,12 +177,12 @@ const starts = [];
 
 add_circle(35, 145, 20, "green");
 add_circle(150, 90, 35, "red");
-//add_circle(340, 200, 50, "blue");
-//add_circle(600, 75, 5, "yellow");
+add_circle(340, 200, 50, "blue");
+add_circle(600, 75, 5, "yellow");
 add_line(nodes[0], nodes[1]);
-//add_line(nodes[0], nodes[2]);
-//add_line(nodes[3], nodes[0]);
-//add_line(nodes[2], nodes[1]);
+add_line(nodes[0], nodes[2]);
+add_line(nodes[3], nodes[0]);
+add_line(nodes[2], nodes[1]);
 
 </script>
 </body>
