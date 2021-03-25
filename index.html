@@ -137,8 +137,10 @@ function add_circle(cx, cy, r, fill, stroke="black") {
 	num_nodes++;
 }
 
-function add_line(from, to) {
+
+function add_line(from, to, type='triangle') {
 	const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+	line.setAttribute('marker-end', 'url(#' + type + ')');
 	line.style.stroke = "black";
 
 	const from_num = from.getAttribute("num");
@@ -156,6 +158,38 @@ function add_line(from, to) {
 	num_lines++;
 }
 
+
+function setup_svg() {
+	const defs = document.createElementNS("http://www.w3.org/2000/svg", 'defs');
+	canvas.appendChild(defs);
+
+	const triangle = document.createElementNS("http://www.w3.org/2000/svg", 'marker');
+	triangle.setAttribute('id', 'triangle');
+	triangle.setAttribute('orient', 'auto');
+	triangle.setAttribute('markerWidth', '10');
+	triangle.setAttribute('markerHeight', '6');
+	triangle.setAttribute('refX', '5');
+	triangle.setAttribute('refY', '3');
+	defs.appendChild(triangle);
+
+	const triangle_path = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+	triangle_path.setAttribute('d', 'M0,0 V6 L10,3 Z');
+	triangle.appendChild(triangle_path);
+
+	const bar = document.createElementNS("http://www.w3.org/2000/svg", 'marker');
+	bar.setAttribute('id', 'bar');
+	bar.setAttribute('orient', 'auto');
+	bar.setAttribute('markerWidth', '2');
+	bar.setAttribute('markerHeight', '12');
+	bar.setAttribute('refX', '1');
+	bar.setAttribute('refY', '6');
+	defs.appendChild(bar);
+
+	const bar_path = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+	bar_path.setAttribute('d', 'M0,0 V12 H2 V-12 Z');
+	bar.appendChild(bar_path);
+}
+
 let window_width = window.innerWidth ||
 	document.documentElement.clientWidth ||
 	document.body.clientWidth;
@@ -168,6 +202,7 @@ const canvas = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
 // Note: The following does not scale with chaning window sizes.
 canvas.setAttribute("width", window_width - 10);
 canvas.setAttribute("height", window_height - 10);
+setup_svg();
 document.getElementById('canvas').appendChild(canvas);
 const canvas_pos = canvas.getBoundingClientRect();
 canvas.addEventListener("touchmove",  touch_move);
@@ -182,10 +217,10 @@ add_circle(35, 145, 20, "green");
 add_circle(150, 90, 35, "red");
 add_circle(340, 200, 50, "blue");
 add_circle(600, 75, 5, "black");
-add_line(nodes[0], nodes[1]);
-add_line(nodes[0], nodes[2]);
-add_line(nodes[3], nodes[0]);
-add_line(nodes[2], nodes[1]);
+add_line(nodes[0], nodes[1], 'triangle');
+add_line(nodes[0], nodes[2], 'triangle');
+add_line(nodes[3], nodes[0], 'bar');
+add_line(nodes[2], nodes[1], 'bar');
 
 </script>
 </body>
