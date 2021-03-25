@@ -103,6 +103,18 @@ function calc_line_pos(line) {
 	const to_y = Number(to.getAttribute("cy"));
 	const to_r = distance + Number(to.getAttribute("r"));
 
+	const dist = Math.sqrt((from_x - to_x)**2 + (from_y - to_y)**2);
+
+	if(dist < from_r + to_r) {
+		// If the two nodes are too close together, funny things start
+		// to happen, so just make the line invisible until they are
+		// further apart again.
+		line.setAttribute('visibility', 'hidden');
+		return;
+	}
+
+	line.setAttribute('visibility', 'visible');
+
 	const angle = Math.atan2(
 		from_x - to_x,
 		from_y - to_y
@@ -141,6 +153,7 @@ function add_circle(cx, cy, r, fill, stroke="black") {
 function add_line(from, to, type='triangle') {
 	const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
 	line.setAttribute('marker-end', 'url(#' + type + ')');
+	line.setAttribute('visibility', 'visible');
 	line.style.stroke = "black";
 
 	const from_num = from.getAttribute("num");
@@ -166,14 +179,14 @@ function setup_svg() {
 	const triangle = document.createElementNS("http://www.w3.org/2000/svg", 'marker');
 	triangle.setAttribute('id', 'triangle');
 	triangle.setAttribute('orient', 'auto');
-	triangle.setAttribute('markerWidth', '10');
-	triangle.setAttribute('markerHeight', '6');
-	triangle.setAttribute('refX', '5');
-	triangle.setAttribute('refY', '3');
+	triangle.setAttribute('markerWidth', '16');
+	triangle.setAttribute('markerHeight', '10');
+	triangle.setAttribute('refX', '8');
+	triangle.setAttribute('refY', '5');
 	defs.appendChild(triangle);
 
 	const triangle_path = document.createElementNS("http://www.w3.org/2000/svg", 'path');
-	triangle_path.setAttribute('d', 'M0,0 V6 L10,3 Z');
+	triangle_path.setAttribute('d', 'M0,0 V10 L16,5 Z');
 	triangle.appendChild(triangle_path);
 
 	const bar = document.createElementNS("http://www.w3.org/2000/svg", 'marker');
