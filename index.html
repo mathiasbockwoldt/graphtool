@@ -6,6 +6,10 @@
 body {
 	margin: 0px;
 }
+
+svg {
+	background-color: lightgrey;
+}
 </style>
 </head>
 <body>
@@ -29,20 +33,18 @@ function touch_start(event) {
 		return;
 	}
 
-	moving_node = event.target;
+	moving_node = event.target.parentNode;
 
-	console.log(event);
-
-	ev_dx = event.target.getAttribute("cx") - event.touches[event.which].clientX;
-	ev_dy = event.target.getAttribute("cy") - event.touches[event.which].clientY;
+	ev_dx = moving_node.getAttribute("graph:cx") - event.touches[event.which].clientX;
+	ev_dy = moving_node.getAttribute("graph:cy") - event.touches[event.which].clientY;
 }
 
 
 function mouse_start(event) {
-	moving_node = event.target;
+	moving_node = event.target.parentNode;
 
-	ev_dx = event.target.getAttribute("cx") - event.clientX;
-	ev_dy = event.target.getAttribute("cy") - event.clientY;
+	ev_dx = moving_node.getAttribute("graph:cx") - event.clientX;
+	ev_dy = moving_node.getAttribute("graph:cy") - event.clientY;
 }
 
 
@@ -72,10 +74,13 @@ function mouse_move(event) {
 
 
 function move(new_x, new_y) {
-	moving_node.setAttribute("cx", new_x);
-	moving_node.setAttribute("cy", new_y);
+	//const width = Number(moving_node.getAttribute('graph:width'));
+	//const height = Number(moving_node.getAttribute('graph:height'));
+	moving_node.setAttribute("graph:cx", new_x);
+	moving_node.setAttribute("graph:cy", new_y);
+	moving_node.setAttribute('transform', 'translate(' + new_x + ', ' + new_y + ')');
 
-	const num = moving_node.getAttribute("num");
+	const num = moving_node.getAttribute("graph:num");
 
 	for(let i = 0; i < starts[num].length; i++) {
 		calc_line_pos(starts[num][i]);
@@ -93,15 +98,81 @@ function end(event) {
 
 
 function calc_line_pos(line) {
-	const from = nodes[line.getAttribute("from")];
-	const to = nodes[line.getAttribute("to")];
+	const from = nodes[line.getAttribute("graph:from")];
+	const to = nodes[line.getAttribute("graph:to")];
 
-	const from_x = Number(from.getAttribute("cx"));
-	const from_y = Number(from.getAttribute("cy"));
-	const from_r = distance + Number(from.getAttribute("r"));
-	const to_x = Number(to.getAttribute("cx"));
-	const to_y = Number(to.getAttribute("cy"));
-	const to_r = distance + Number(to.getAttribute("r"));
+	const from_type = from.getAttribute("graph:type");
+	const to_type = to.getAttribute("graph:type");
+
+	const from_x = Number(from.getAttribute("graph:cx"));
+	const from_y = Number(from.getAttribute("graph:cy"));
+	const to_x = Number(to.getAttribute("graph:cx"));
+	const to_y = Number(to.getAttribute("graph:cy"));
+
+	const angle = Math.atan2(
+		from_x - to_x,
+		from_y - to_y
+	);
+	const sin_angle = Math.sin(angle);
+	const cos_angle = Math.cos(angle);
+
+	let from_r, to_r;
+
+	if(from_type === 'rect') {
+		let dx = distance + Number(from.getAttribute("graph:height")) / 2;
+		let dy = distance + Number(from.getAttribute("graph:width")) / 2;
+		if(cos_angle <= 0) {
+			dx = - dx
+		}
+		if(sin_angle <= 0) {
+			dy = - dy
+		}
+
+		if(Math.abs(dx * sin_angle) < Math.abs(dy * cos_angle)) {
+			dy = (dx * sin_angle) / cos_angle;
+		}
+		else {
+			dx = (dy * cos_angle) / sin_angle;
+		}
+
+		from_r = Math.sqrt(dx**2 + dy**2);
+	}
+	else if(from_type === 'ellipse') {
+		const from_rx =  + Number(from.getAttribute("graph:rx"));
+		const from_ry =  + Number(from.getAttribute("graph:ry"));
+		from_r = distance + Math.sqrt(1/((sin_angle / from_rx)**2 + (cos_angle / from_ry)**2));
+	}
+	else {  // Circle is default
+		from_r = distance + Number(from.getAttribute("graph:r"));
+	}
+
+	if(to_type === 'rect') {
+		let dx = distance + Number(to.getAttribute("graph:height")) / 2;
+		let dy = distance + Number(to.getAttribute("graph:width")) / 2;
+		if(cos_angle <= 0) {
+			dx = - dx
+		}
+		if(sin_angle <= 0) {
+			dy = - dy
+		}
+
+		if(Math.abs(dx * sin_angle) < Math.abs(dy * cos_angle)) {
+			dy = (dx * sin_angle) / cos_angle;
+		}
+		else {
+			dx = (dy * cos_angle) / sin_angle;
+		}
+
+		to_r = Math.sqrt(dx**2 + dy**2);
+	}
+	else if(to_type === 'ellipse') {
+		const to_rx =  + Number(to.getAttribute("graph:rx"));
+		const to_ry =  + Number(to.getAttribute("graph:ry"));
+		to_r = distance + Math.sqrt(1/((sin_angle / to_rx)**2 + (cos_angle / to_ry)**2));
+	}
+	else {  // Circle is default
+		to_r = distance + Number(to.getAttribute("graph:r"));
+	}
 
 	const dist = Math.sqrt((from_x - to_x)**2 + (from_y - to_y)**2);
 
@@ -115,37 +186,109 @@ function calc_line_pos(line) {
 
 	line.setAttribute('visibility', 'visible');
 
-	const angle = Math.atan2(
-		from_x - to_x,
-		from_y - to_y
-	);
+	const start_x = from_x - from_r * sin_angle;
+	const start_y = from_y - from_r * cos_angle;
+	const end_x = to_x + to_r * sin_angle;
+	const end_y = to_y + to_r * cos_angle;
 
-	line.setAttribute("x1", from_x - from_r * Math.sin(angle));
-	line.setAttribute("y1", from_y - from_r * Math.cos(angle));
-	line.setAttribute("x2", to_x + to_r * Math.sin(angle));
-	line.setAttribute("y2", to_y + to_r * Math.cos(angle));
+	line.setAttribute("x1", start_x);
+	line.setAttribute("y1", start_y);
+	line.setAttribute("x2", end_x);
+	line.setAttribute("y2", end_y);
+}
+
+
+function add_rectangle(x, y, width, height, fill, stroke="black") {
+	const node = document.createElementNS("http://www.w3.org/2000/svg", 'g');
+	node.setAttribute('graph:cx', x + width/2);
+	node.setAttribute('graph:cy', y + height/2);
+	node.setAttribute('graph:width', width);
+	node.setAttribute('graph:height', height);
+	node.setAttribute('graph:type', 'rect');
+	node.setAttribute('graph:num', num_nodes);
+	node.setAttribute('transform', 'translate(' + (x + width/2) + ', ' + (y + height/2) + ')');
+
+	const rect = document.createElementNS("http://www.w3.org/2000/svg", 'rect');
+	rect.setAttribute("x", -width/2);
+	rect.setAttribute("y", -height/2);
+	rect.setAttribute("width", width);
+	rect.setAttribute("height", height);
+	rect.style.stroke = stroke;
+	rect.style.fill = fill;
+	rect.style.fillOpacity = "0.4";
+	rect.addEventListener("touchstart", touch_start);
+	rect.addEventListener("mousedown", mouse_start);
+
+	node.appendChild(rect);
+	canvas.appendChild(node);
+
+	starts.push([]);
+	ends.push([]);
+	nodes.push(node);
+	num_nodes++;
+}
+
+
+function add_ellipse(cx, cy, rx, ry, fill, stroke="black") {
+	const node = document.createElementNS("http://www.w3.org/2000/svg", 'g');
+	node.setAttribute('graph:cx', cx);
+	node.setAttribute('graph:cy', cy);
+	node.setAttribute('graph:rx', rx);
+	node.setAttribute('graph:ry', ry);
+	//node.setAttribute('graph:width', rx * 2);
+	//node.setAttribute('graph:height', ry * 2);
+	node.setAttribute('graph:type', 'ellipse');
+	node.setAttribute('graph:num', num_nodes);
+	node.setAttribute('transform', 'translate(' + cx + ', ' + cy + ')');
+
+	const ellipse = document.createElementNS("http://www.w3.org/2000/svg", 'ellipse');
+	ellipse.setAttribute("cx", 0);
+	ellipse.setAttribute("cy", 0);
+	ellipse.setAttribute("rx", rx);
+	ellipse.setAttribute("ry", ry);
+	ellipse.style.stroke = stroke;
+	ellipse.style.fill = fill;
+	ellipse.style.fillOpacity = "0.4";
+	ellipse.addEventListener("touchstart", touch_start);
+	ellipse.addEventListener("mousedown", mouse_start);
+
+	node.appendChild(ellipse);
+	canvas.appendChild(node);
+
+	starts.push([]);
+	ends.push([]);
+	nodes.push(node);
+	num_nodes++;
 }
 
 
 function add_circle(cx, cy, r, fill, stroke="black") {
+	const node = document.createElementNS("http://www.w3.org/2000/svg", 'g');
+	node.setAttribute('graph:cx', cx);
+	node.setAttribute('graph:cy', cy);
+	node.setAttribute('graph:r', r);
+	//node.setAttribute('graph:width', r * 2);
+	//node.setAttribute('graph:height', r * 2);
+	node.setAttribute('graph:type', 'circle');
+	node.setAttribute('graph:num', num_nodes);
+	node.setAttribute('transform', 'translate(' + cx + ', ' + cy + ')');
+
 	const circle = document.createElementNS("http://www.w3.org/2000/svg", 'circle');
-	circle.setAttribute("cx", cx);
-	circle.setAttribute("cy", cy);
+	circle.setAttribute("cx", 0);
+	circle.setAttribute("cy", 0);
 	circle.setAttribute("r", r);
-	circle.setAttribute("num", num_nodes);
 	circle.style.stroke = stroke;
 	circle.style.fill = fill;
 	circle.style.fillOpacity = "0.4";
 	circle.addEventListener("touchstart", touch_start);
 	circle.addEventListener("mousedown", mouse_start);
-	circle.addEventListener("touchend", end);
-	circle.addEventListener("touchcancel",end);
-	circle.addEventListener("mouseup", end);
-	canvas.appendChild(circle);
+
+	node.appendChild(circle);
+	canvas.appendChild(node);
 
 	starts.push([]);
 	ends.push([]);
-	nodes.push(circle);
+	nodes.push(node);
 	num_nodes++;
 }
 
@@ -156,10 +299,10 @@ function add_line(from, to, type='triangle') {
 	line.setAttribute('visibility', 'visible');
 	line.style.stroke = "black";
 
-	const from_num = from.getAttribute("num");
-	const to_num = to.getAttribute("num");
-	line.setAttribute("from", from_num);
-	line.setAttribute("to", to_num);
+	const from_num = from.getAttribute("graph:num");
+	const to_num = to.getAttribute("graph:num");
+	line.setAttribute("graph:from", from_num);
+	line.setAttribute("graph:to", to_num);
 
 	starts[from_num].push(line);
 	ends[to_num].push(line);
@@ -203,6 +346,7 @@ function setup_svg() {
 	bar.appendChild(bar_path);
 }
 
+
 let window_width = window.innerWidth ||
 	document.documentElement.clientWidth ||
 	document.body.clientWidth;
@@ -212,7 +356,7 @@ let window_height = window.innerHeight ||
 	document.body.clientHeight;
 
 const canvas = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
-// Note: The following does not scale with chaning window sizes.
+// Note: The following does not scale with changing window sizes.
 canvas.setAttribute("width", window_width - 10);
 canvas.setAttribute("height", window_height - 10);
 setup_svg();
@@ -220,6 +364,9 @@ document.getElementById('canvas').appendChild(canvas);
 const canvas_pos = canvas.getBoundingClientRect();
 canvas.addEventListener("touchmove",  touch_move);
 canvas.addEventListener("mousemove",  mouse_move);
+canvas.addEventListener("touchend", end);
+canvas.addEventListener("touchcancel",end);
+canvas.addEventListener("mouseup", end);
 
 const nodes = [];
 const lines = [];
@@ -227,13 +374,17 @@ const ends = [];
 const starts = [];
 
 add_circle(35, 145, 20, "green");
-add_circle(150, 90, 35, "red");
+add_ellipse(400, 600, 120, 60, "red");
 add_circle(340, 200, 50, "blue");
-add_circle(600, 75, 5, "black");
+add_ellipse(600, 95, 20, 80, "black");
+add_rectangle(540, 200, 200, 50, "purple");
+add_rectangle(150, 295, 20, 80, "teal");
 add_line(nodes[0], nodes[1], 'triangle');
 add_line(nodes[0], nodes[2], 'triangle');
 add_line(nodes[3], nodes[0], 'bar');
 add_line(nodes[2], nodes[1], 'bar');
+add_line(nodes[4], nodes[5], 'triangle');
+add_line(nodes[5], nodes[2], 'bar');
 
 </script>
 </body>
