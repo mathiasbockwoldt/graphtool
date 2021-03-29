@@ -1,0 +1,14 @@
+body {
+	margin: 0px;
+}
+
+svg {
+	background-color: lightgrey;
+	width: 94vw;
+	height: 94vh;
+
+}
+
+div {
+	text-align: center;
+}
