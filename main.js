@@ -97,18 +97,114 @@ Graphtool.prototype.setup_svg = function(target) {
 
 
 Graphtool.prototype.load_example = function() {
-	this.add_circle(100, 100, 20, 'green');
-	this.add_ellipse(400, 600, 120, 60, 'red');
-	this.add_circle(340, 200, 50, 'blue');
-	this.add_ellipse(600, 95, 20, 80, 'black');
-	this.add_rectangle(540, 200, 200, 50, 'purple');
-	this.add_rectangle(150, 295, 20, 80, 'teal');
-	this.add_line(this.nodes[0], this.nodes[1], 'triangle');
-	this.add_line(this.nodes[0], this.nodes[2], 'triangle');
-	this.add_line(this.nodes[3], this.nodes[0], 'bar');
-	this.add_line(this.nodes[2], this.nodes[1], 'bar');
-	this.add_line(this.nodes[4], this.nodes[5], 'triangle');
-	this.add_line(this.nodes[5], this.nodes[2], 'bar');
+	this.reset();
+
+	this.add_node({
+		'type': 'circle',
+		'cx': 100, 'cy': 100, 'r': 20,
+		'style': {'fill': 'green', 'stroke': 'black'},
+		'attr': {},
+	});
+
+	this.add_node({
+		'type': 'ellipse',
+		'cx': 400, 'cy': 600, 'rx': 120, 'ry': 60,
+		'style': {'fill': 'red', 'stroke': 'black'},
+		'attr': {},
+		'subnodes': [
+			{
+				'type': 'polygon',
+				'style': {'fill': '#442222'},
+				'attr': {'points': '0,-40 25,40 -40,-10 40,-10 -25,40'},
+			},
+			{
+				'type': 'rect',
+				'style': {'fill': '#aaffff'},
+				'attr': {'x': -5, 'y': -5, 'width': 10, 'height': 10},
+			},
+		],
+	});
+
+	this.add_node({
+		'type': 'circle',
+		'cx': 340, 'cy': 200, 'r': 50,
+		'style': {'fill': 'blue', 'stroke': 'white', 'strokeWidth': 5},
+		'attr': {},
+	});
+
+	this.add_node({
+		'type': 'ellipse',
+		'cx': 600, 'cy': 95, 'rx': 20, 'ry': 80,
+		'style': {'fill': 'black', 'stroke': 'black', 'fillOpacity': 0.4},
+		'attr': {},
+	});
+
+	this.add_node({
+		'type': 'rect',
+		'x': 540, 'y': 200, 'width': 200, 'height': 50,
+		'style': {'fill': 'white', 'stroke': 'black'},
+		'attr': {},
+		'subnodes': [
+			{
+				'type': 'text',
+				'text': 'Node name',
+				'style': {'fill': '#aa0000', 'textAnchor': 'middle', 'dominantBaseline': 'central'},
+				'attr': {'x': 0, 'y': 0},
+			},
+		],
+	});
+
+	this.add_node({
+		'type': 'rect',
+		'x': 150, 'y': 295, 'width': 20, 'height': 80,
+		'style': {'fill': 'teal', 'stroke': 'black', 'strokeDasharray': '4 2'},
+		'attr': {},
+	});
+
+	this.add_line(0, 1, 'triangle', {'stroke': 'black'}, {});
+	this.add_line(0, 2, 'triangle', {'stroke': 'black'}, {});
+	this.add_line(3, 0, 'none', {'stroke': 'black'}, {});
+	this.add_line(2, 1, 'bar', {'stroke': 'black'}, {});
+	this.add_line(4, 5, 'triangle', {'stroke': 'black', 'strokeDasharray': '5'}, {});
+	this.add_line(5, 2, 'bar', {'stroke': 'black'}, {});
+};
+
+
+Graphtool.prototype.reset = function() {
+	for(let i = 0; i < this.num_lines; i++) {
+		this.canvas.removeChild(this.lines[i]);
+	}
+
+	for(let i = 0; i < this.num_nodes; i++) {
+		this.canvas.removeChild(this.nodes[i]);
+	}
+
+	this.num_nodes = 0;
+	this.num_lines = 0;
+
+	this.nodes = [];
+	this.lines = [];
+	this.ends = [];
+	this.starts = [];
+
+	this.x_pos = 0;
+	this.y_pos = 0;
+	this.scale = 1;
+	this.viewbox_width = this.svg_width;
+	this.viewbox_height = this.svg_height;
+};
+
+
+Graphtool.prototype.load_from_json = function(obj) {
+	this.reset();
+
+	for(let i = 0; i < obj.nodes.length; i++) {
+		this.add_node(nodes[i]);
+	}
+
+	for(let i = 0; i < obj.edges.length; i++) {
+		this.add_edge(edges[i]);
+	}
 };
 
 
@@ -224,110 +320,179 @@ Graphtool.prototype.calc_line_pos = function(line) {
 };
 
 
-Graphtool.prototype.add_rectangle = function(x, y, width, height, fill, stroke='black') {
+Graphtool.prototype.add_node = function(desc) {
+	if(!['circle', 'rect', 'ellipse'].includes(desc.type)) {
+		console.warn(`Node type ${desc.type} is not valid. Using circle instead.`);
+		desc.type = 'circle';
+	}
+
+	let node;
+
+	if(desc.type === 'rect') {
+		node = this.add_rectangle(desc.x, desc.y, desc.width, desc.height, desc.style, desc.attr);
+	}
+	else if(desc.type === 'ellipse') {
+		node = this.add_ellipse(desc.cx, desc.cy, desc.rx, desc.ry, desc.style, desc.attr);
+	}
+	else {
+		node = this.add_circle(desc.cx, desc.cy, desc.r, desc.style, desc.attr);
+	}
+
+	node.setAttribute('graph:num', this.num_nodes);
+
+	if(desc.hasOwnProperty('subnodes')) {
+		for(const subnode of desc.subnodes) {
+			this.add_subnode(node, subnode);
+		}
+	}
+
+	this.canvas.appendChild(node);
+
+	this.starts.push([]);
+	this.ends.push([]);
+	this.nodes.push(node);
+	this.num_nodes++;
+};
+
+
+Graphtool.prototype.add_subnode = function(node, subnode) {
+	const sub = document.createElementNS('http://www.w3.org/2000/svg', subnode.type);
+
+	for(const key in subnode.style) {
+		sub.style[key] = subnode.style[key];
+	}
+
+	for(const key in subnode.attr) {
+		sub.setAttribute(key, subnode.attr[key]);
+	}
+
+	if(subnode.hasOwnProperty('text')) {
+		const text = document.createTextNode(subnode.text);
+		sub.appendChild(text);
+	}
+
+	node.appendChild(sub);
+};
+
+
+Graphtool.prototype.add_rectangle = function(x, y, width, height, style, attr) {
+	const cx = x + width/2;
+	const cy = y + height/2;
+
 	const node = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-	node.setAttribute('graph:cx', x + width/2);
-	node.setAttribute('graph:cy', y + height/2);
+	node.setAttribute('graph:cx', cx);
+	node.setAttribute('graph:cy', cy);
 	node.setAttribute('graph:width', width);
 	node.setAttribute('graph:height', height);
 	node.setAttribute('graph:type', 'rect');
-	node.setAttribute('graph:num', this.num_nodes);
-	node.setAttribute('transform', 'translate(' + (x + width/2) + ', ' + (y + height/2) + ')');
+	node.setAttribute('transform', `translate(${cx},${cy})`);
 
 	const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
 	rect.setAttribute('x', -width/2);
 	rect.setAttribute('y', -height/2);
 	rect.setAttribute('width', width);
 	rect.setAttribute('height', height);
-	rect.style.stroke = stroke;
-	rect.style.fill = fill;
-	rect.style.fillOpacity = '0.4';
 	rect.addEventListener('touchstart', this.mv_touch_start_node.bind(this));
 	rect.addEventListener('mousedown', this.mv_mouse_start_node.bind(this));
 
-	node.appendChild(rect);
-	this.canvas.appendChild(node);
+	for(const key in style) {
+		rect.style[key] = style[key];
+	}
 
-	this.starts.push([]);
-	this.ends.push([]);
-	this.nodes.push(node);
-	this.num_nodes++;
+	for(const key in attr) {
+		rect.setAttribute(key, attr[key]);
+	}
+
+	node.appendChild(rect);
+
+	return node;
 };
 
 
-Graphtool.prototype.add_ellipse = function(cx, cy, rx, ry, fill, stroke='black') {
+Graphtool.prototype.add_ellipse = function(cx, cy, rx, ry, style, attr) {
 	const node = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	node.setAttribute('graph:cx', cx);
 	node.setAttribute('graph:cy', cy);
 	node.setAttribute('graph:rx', rx);
 	node.setAttribute('graph:ry', ry);
 	node.setAttribute('graph:type', 'ellipse');
-	node.setAttribute('graph:num', this.num_nodes);
-	node.setAttribute('transform', 'translate(' + cx + ', ' + cy + ')');
+	node.setAttribute('transform', `translate(${cx},${cy})`);
 
 	const ellipse = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
 	ellipse.setAttribute('cx', 0);
 	ellipse.setAttribute('cy', 0);
 	ellipse.setAttribute('rx', rx);
 	ellipse.setAttribute('ry', ry);
-	ellipse.style.stroke = stroke;
-	ellipse.style.fill = fill;
-	ellipse.style.fillOpacity = '0.4';
 	ellipse.addEventListener('touchstart', this.mv_touch_start_node.bind(this));
 	ellipse.addEventListener('mousedown', this.mv_mouse_start_node.bind(this));
 
-	node.appendChild(ellipse);
-	this.canvas.appendChild(node);
+	for(const key in style) {
+		ellipse.style[key] = style[key];
+	}
 
-	this.starts.push([]);
-	this.ends.push([]);
-	this.nodes.push(node);
-	this.num_nodes++;
+	for(const key in attr) {
+		ellipse.setAttribute(key, attr[key]);
+	}
+
+	node.appendChild(ellipse);
+
+	return node;
 };
 
 
-Graphtool.prototype.add_circle = function(cx, cy, r, fill, stroke='black') {
+Graphtool.prototype.add_circle = function(cx, cy, r, style, attr) {
 	const node = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	node.setAttribute('graph:cx', cx);
 	node.setAttribute('graph:cy', cy);
 	node.setAttribute('graph:r', r);
 	node.setAttribute('graph:type', 'circle');
-	node.setAttribute('graph:num', this.num_nodes);
-	node.setAttribute('transform', 'translate(' + cx + ', ' + cy + ')');
+	node.setAttribute('transform', `translate(${cx},${cy})`);
 
 	const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 	circle.setAttribute('cx', 0);
 	circle.setAttribute('cy', 0);
 	circle.setAttribute('r', r);
-	circle.style.stroke = stroke;
-	circle.style.fill = fill;
-	circle.style.fillOpacity = '0.4';
 	circle.addEventListener('touchstart', this.mv_touch_start_node.bind(this));
 	circle.addEventListener('mousedown', this.mv_mouse_start_node.bind(this));
 
-	node.appendChild(circle);
-	this.canvas.appendChild(node);
+	for(const key in style) {
+		circle.style[key] = style[key];
+	}
 
-	this.starts.push([]);
-	this.ends.push([]);
-	this.nodes.push(node);
-	this.num_nodes++;
+	for(const key in attr) {
+		circle.setAttribute(key, attr[key]);
+	}
+
+	node.appendChild(circle);
+
+	return node;
 };
 
 
-Graphtool.prototype.add_line = function(from, to, type='triangle') {
+Graphtool.prototype.add_line = function(from, to, type=null, style={}, attr={}) {
+	if(from === to) {
+		console.log(`Tried to draw a line from ${from_num} to itself. This is not implemented, yet.`);
+		return;
+	}
+
 	const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-	line.setAttribute('marker-end', `url(#${type})`);
+	if(type || type !== 'none') {
+		line.setAttribute('marker-end', `url(#${type})`);
+	}
 	line.setAttribute('visibility', 'visible');
-	line.style.stroke = 'black';
+	line.setAttribute('graph:from', from);
+	line.setAttribute('graph:to', to);
 
-	const from_num = from.getAttribute('graph:num');
-	const to_num = to.getAttribute('graph:num');
-	line.setAttribute('graph:from', from_num);
-	line.setAttribute('graph:to', to_num);
+	for(const key in style) {
+		line.style[key] = style[key];
+	}
 
-	this.starts[from_num].push(line);
-	this.ends[to_num].push(line);
+	for(const key in attr) {
+		line.setAttribute(key, attr[key]);
+	}
+
+	this.starts[from].push(line);
+	this.ends[to].push(line);
 
 	this.calc_line_pos(line);
 	this.canvas.appendChild(line);

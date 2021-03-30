@@ -57,6 +57,11 @@ Graphtool.prototype.mv_mouse_start_canvas = function(event) {
 	event.preventDefault();
 	event.stopPropagation();
 
+	if(event.target !== this.canvas) {
+		this.mv_mouse_start_node(event);
+		return;
+	}
+
 	this.mv_orig_x = this.x_pos;
 	this.mv_orig_y = this.y_pos;
 
