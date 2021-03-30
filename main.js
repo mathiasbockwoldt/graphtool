@@ -34,7 +34,7 @@ function Graphtool() {
 
 Graphtool.prototype.update_viewbox = function() {
 	this.canvas.setAttribute('viewBox',
-		`${this.x_pos/this.scale} ${this.y_pos/this.scale} ${this.svg_width/this.scale} ${this.svg_height/this.scale}`);
+		`${this.x_pos} ${this.y_pos} ${this.svg_width/this.scale} ${this.svg_height/this.scale}`);
 };
 
 
@@ -97,7 +97,7 @@ Graphtool.prototype.setup_svg = function(target) {
 
 
 Graphtool.prototype.load_example = function() {
-	this.add_circle(35, 145, 20, 'green');
+	this.add_circle(100, 100, 20, 'green');
 	this.add_ellipse(400, 600, 120, 60, 'red');
 	this.add_circle(340, 200, 50, 'blue');
 	this.add_ellipse(600, 95, 20, 80, 'black');
