@@ -11,6 +11,7 @@ function Graphtool() {
 	this.lines = [];
 	this.ends = [];
 	this.starts = [];
+	this.node_name_to_num = {};
 
 	this.svg_bb = null;
 	this.x_pos = 0;
@@ -38,9 +39,30 @@ Graphtool.prototype.update_viewbox = function() {
 };
 
 
-Graphtool.prototype.setup_buttons = function() {
+Graphtool.prototype.setup_events = function() {
 	document.getElementById('btn_zoomin').addEventListener('click', this.mv_zoom_in.bind(this));
 	document.getElementById('btn_zoomout').addEventListener('click', this.mv_zoom_out.bind(this));
+
+	this.canvas.addEventListener('touchmove', this.mv_touch_move.bind(this));
+	this.canvas.addEventListener('mousemove', this.mv_mouse_move.bind(this));
+	this.canvas.addEventListener('touchend', this.mv_end.bind(this));
+	this.canvas.addEventListener('touchcancel', this.mv_end.bind(this));
+	this.canvas.addEventListener('mouseup', this.mv_end.bind(this));
+	this.canvas.addEventListener('touchstart', this.mv_touch_start_canvas.bind(this));
+	this.canvas.addEventListener('mousedown', this.mv_mouse_start_canvas.bind(this));
+	this.canvas.addEventListener('wheel', this.mv_wheel_zoom.bind(this));
+	this.canvas.addEventListener('contextmenu', e => { e.preventDefault(); });
+
+	this.canvas.addEventListener('dragover', (event) => {
+		event.stopPropagation();
+		event.preventDefault();
+	});
+
+	this.canvas.addEventListener('drop', (event) => {
+		event.stopPropagation();
+		event.preventDefault();
+		this.upload_file(event.dataTransfer.files[0]);
+	});
 };
 
 
@@ -55,15 +77,6 @@ Graphtool.prototype.setup_svg = function(target) {
 	this.x_pos = 0;
 	this.y_pos = 0;
 	this.update_viewbox();
-	this.canvas.addEventListener('touchmove', this.mv_touch_move.bind(this));
-	this.canvas.addEventListener('mousemove', this.mv_mouse_move.bind(this));
-	this.canvas.addEventListener('touchend', this.mv_end.bind(this));
-	this.canvas.addEventListener('touchcancel', this.mv_end.bind(this));
-	this.canvas.addEventListener('mouseup', this.mv_end.bind(this));
-	this.canvas.addEventListener('touchstart', this.mv_touch_start_canvas.bind(this));
-	this.canvas.addEventListener('mousedown', this.mv_mouse_start_canvas.bind(this));
-	this.canvas.addEventListener('wheel', this.mv_wheel_zoom.bind(this));
-	this.canvas.addEventListener('contextmenu', e => { e.preventDefault(); });
 
 	const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 	this.canvas.appendChild(defs);
@@ -186,6 +199,7 @@ Graphtool.prototype.reset = function() {
 	this.lines = [];
 	this.ends = [];
 	this.starts = [];
+	this.node_name_to_num = {};
 
 	this.x_pos = 0;
 	this.y_pos = 0;
@@ -199,11 +213,11 @@ Graphtool.prototype.load_from_json = function(obj) {
 	this.reset();
 
 	for(let i = 0; i < obj.nodes.length; i++) {
-		this.add_node(nodes[i]);
+		this.add_node(obj.nodes[i]);
 	}
 
 	for(let i = 0; i < obj.edges.length; i++) {
-		this.add_edge(edges[i]);
+		this.add_edge(obj.edges[i]);
 	}
 };
 
@@ -326,6 +340,10 @@ Graphtool.prototype.add_node = function(desc) {
 		desc.type = 'circle';
 	}
 
+	if(!desc.hasOwnProperty('id')) {
+		desc.id = this.num_nodes;
+	}
+
 	let node;
 
 	if(desc.type === 'rect') {
@@ -339,6 +357,7 @@ Graphtool.prototype.add_node = function(desc) {
 	}
 
 	node.setAttribute('graph:num', this.num_nodes);
+	node.setAttribute('graph:id', desc.id);
 
 	if(desc.hasOwnProperty('subnodes')) {
 		for(const subnode of desc.subnodes) {
@@ -347,6 +366,8 @@ Graphtool.prototype.add_node = function(desc) {
 	}
 
 	this.canvas.appendChild(node);
+
+	this.node_name_to_num[desc.id] = this.num_nodes;
 
 	this.starts.push([]);
 	this.ends.push([]);
@@ -469,10 +490,26 @@ Graphtool.prototype.add_circle = function(cx, cy, r, style, attr) {
 };
 
 
+Graphtool.prototype.add_edge = function(obj) {
+	const type = obj.hasOwnProperty('type') ? obj.type : null;
+	const style = obj.hasOwnProperty('style') ? obj.style : null;
+	const attr = obj.hasOwnProperty('attr') ? obj.attr : null;
+
+	this.add_line(obj.from, obj.to, type, style, attr);
+};
+
+
 Graphtool.prototype.add_line = function(from, to, type=null, style={}, attr={}) {
 	if(from === to) {
-		console.log(`Tried to draw a line from ${from_num} to itself. This is not implemented, yet.`);
+		console.log(`Tried to draw a line from ${from} to itself. This is not implemented, yet.`);
 		return;
+	}
+
+	if(this.node_name_to_num.hasOwnProperty(from)) {
+		from = this.node_name_to_num[from];
+	}
+	if(this.node_name_to_num.hasOwnProperty(to)) {
+		to = this.node_name_to_num[to];
 	}
 
 	const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');

@@ -191,3 +191,18 @@ Graphtool.prototype.mv_end = function(event) {
 	this.mv_node = null;
 	this.mv_canvas = null;
 };
+
+
+Graphtool.prototype.upload_file = function(file) {
+	const reader = new FileReader();
+	if(file.type === 'application/json') {
+		reader.addEventListener('load', (event) => {
+			const content = JSON.parse(event.target.result);
+			this.load_from_json(content);
+		});
+		reader.readAsText(file);
+	}
+	else {
+		alert(`The file type "${file.type}" is not supported.`);
+	}
+};
