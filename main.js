@@ -1,6 +1,11 @@
 'use strict';
 
 
+function round_to(num, step) {
+	return Math.floor((num / step) + 0.5) * step;
+}
+
+
 function Graphtool() {
 	this.canvas = null;
 
@@ -30,6 +35,7 @@ function Graphtool() {
 	this.mv_canvas = null;
 
 	this.distance = 10;
+	this.gridding = 50;
 }
 
 
@@ -206,6 +212,8 @@ Graphtool.prototype.reset = function() {
 	this.scale = 1;
 	this.viewbox_width = this.svg_width;
 	this.viewbox_height = this.svg_height;
+
+	this.update_viewbox();
 };
 
 

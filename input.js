@@ -113,8 +113,8 @@ Graphtool.prototype.mv_mouse_move = function(event) {
 
 
 Graphtool.prototype.mv_move_node = function(new_x, new_y) {
-	new_x = (this.mv_orig_x + new_x) / this.scale;
-	new_y = (this.mv_orig_y + new_y) / this.scale;
+	new_x = round_to((this.mv_orig_x + new_x) / this.scale, this.gridding);
+	new_y = round_to((this.mv_orig_y + new_y) / this.scale, this.gridding);
 	this.mv_node.setAttribute('graph:cx', new_x);
 	this.mv_node.setAttribute('graph:cy', new_y);
 	this.mv_node.setAttribute('transform', 'translate(' + new_x + ', ' + new_y + ')');
