@@ -336,7 +336,7 @@ Graphtool.prototype.calc_line_pos = function(line) {
 
 Graphtool.prototype.add_node = function(desc) {
 	if(!['circle', 'rect', 'ellipse'].includes(desc.type)) {
-		console.warn(`Node type ${desc.type} is not valid. Using circle instead.`);
+		console.warn(`Node type ${desc.type} is unknown. Using circle instead.`);
 		desc.type = 'circle';
 	}
 
@@ -359,6 +359,11 @@ Graphtool.prototype.add_node = function(desc) {
 	node.setAttribute('graph:num', this.num_nodes);
 	node.setAttribute('graph:id', desc.id);
 
+	if(desc.hasOwnProperty('label')) {
+		const style = desc.hasOwnProperty('label_style') ? desc.label_style : {};
+		this.add_label(node, desc.label, style);
+	}
+
 	if(desc.hasOwnProperty('subnodes')) {
 		for(const subnode of desc.subnodes) {
 			this.add_subnode(node, subnode);
@@ -373,6 +378,24 @@ Graphtool.prototype.add_node = function(desc) {
 	this.ends.push([]);
 	this.nodes.push(node);
 	this.num_nodes++;
+};
+
+
+Graphtool.prototype.add_label = function(node, label, style) {
+	const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+	sub.setAttribute('x', 0);
+	sub.setAttribute('y', 0);
+	sub.appendChild(document.createTextNode(label));
+
+	sub.style["textAnchor"] = "middle";
+	sub.style["dominantBaseline"] = "central";
+
+	for(const key in style) {
+		sub.style[key] = style[key];
+	}
+
+	node.appendChild(sub);
 };
 
 
@@ -510,6 +533,15 @@ Graphtool.prototype.add_line = function(from, to, type=null, style={}, attr={}) 
 	}
 	if(this.node_name_to_num.hasOwnProperty(to)) {
 		to = this.node_name_to_num[to];
+	}
+
+	if(!this.starts.hasOwnProperty(from)) {
+		console.log(`Could not find start node ${from}`);
+		return;
+	}
+	if(!this.starts.hasOwnProperty(to)) {
+		console.log(`Could not find end node ${to}`);
+		return;
 	}
 
 	const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
