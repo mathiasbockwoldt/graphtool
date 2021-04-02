@@ -54,6 +54,7 @@ Graphtool.prototype.setup_events = function() {
 	this.canvas.addEventListener('touchend', this.mv_end.bind(this));
 	this.canvas.addEventListener('touchcancel', this.mv_end.bind(this));
 	this.canvas.addEventListener('mouseup', this.mv_end.bind(this));
+	this.canvas.addEventListener('mouseleave', this.mv_end.bind(this));
 	this.canvas.addEventListener('touchstart', this.mv_touch_start_canvas.bind(this));
 	this.canvas.addEventListener('mousedown', this.mv_mouse_start_canvas.bind(this));
 	this.canvas.addEventListener('wheel', this.mv_wheel_zoom.bind(this));

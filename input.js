@@ -11,6 +11,7 @@ Graphtool.prototype.mv_touch_start_node = function(event) {
 	}
 
 	this.mv_node = event.target.parentNode;
+	this.mv_canvas = null;
 
 	this.mv_orig_x = Number(this.mv_node.getAttribute('graph:cx')) * this.scale;
 	this.mv_orig_y = Number(this.mv_node.getAttribute('graph:cy')) * this.scale;
@@ -25,6 +26,7 @@ Graphtool.prototype.mv_mouse_start_node = function(event) {
 	event.stopPropagation();
 
 	this.mv_node = event.target.parentNode;
+	this.mv_canvas = null;
 
 	this.mv_orig_x = Number(this.mv_node.getAttribute('graph:cx')) * this.scale;
 	this.mv_orig_y = Number(this.mv_node.getAttribute('graph:cy')) * this.scale;
@@ -47,6 +49,7 @@ Graphtool.prototype.mv_touch_start_canvas = function(event) {
 	this.mv_orig_y = this.y_pos;
 
 	this.mv_canvas = event.target;
+	this.mv_node = null;
 
 	this.mv_dx = event.touches[event.which].clientX;
 	this.mv_dy = event.touches[event.which].clientY;
@@ -66,6 +69,7 @@ Graphtool.prototype.mv_mouse_start_canvas = function(event) {
 	this.mv_orig_y = this.y_pos;
 
 	this.mv_canvas = event.target;
+	this.mv_node = null;
 
 	this.mv_dx = event.clientX;
 	this.mv_dy = event.clientY;
