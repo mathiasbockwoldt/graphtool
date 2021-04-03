@@ -135,56 +135,46 @@ Graphtool.prototype.mv_move_canvas = function(new_x, new_y) {
 
 Graphtool.prototype.mv_wheel_zoom = function(event) {
 	if(event.deltaY < 0) {
-		this.mv_zoom_in(event, event.clientX - this.svg_bb.x, event.clientY - this.svg_bb.x);
+		this.mv_zoom_in(event, event.clientX - this.svg_bb.x, event.clientY - this.svg_bb.y);
 	}
 	else {
-		this.mv_zoom_out(event, event.clientX - this.svg_bb.x, event.clientY - this.svg_bb.x);
+		this.mv_zoom_out(event, event.clientX - this.svg_bb.x, event.clientY - this.svg_bb.y);
 	}
 };
 
 
-Graphtool.prototype.mv_zoom_in = function(event, center_x=-1, center_y=-1) {
+Graphtool.prototype.mv_zoom_in = function(event, pointer_x=-1, pointer_y=-1) {
 	// Some rounding to make sure we end up at 1.0 again if zooming in and out
 	const new_scale = Math.round(this.scale * 1250) / 1000;
 	//const new_scale = Math.round(this.scale * 2000) / 1000;
 	if(new_scale < 10) {
-		this.mv_zoom(new_scale, center_x, center_y);
+		this.mv_zoom(new_scale, pointer_x, pointer_y);
 	}
 };
 
 
-Graphtool.prototype.mv_zoom_out = function(event, center_x=-1, center_y=-1) {
+Graphtool.prototype.mv_zoom_out = function(event, pointer_x=-1, pointer_y=-1) {
 	// Some rounding to make sure we end up at 1.0 again if zooming in and out
 	const new_scale = Math.round(this.scale * 800) / 1000;
 	//const new_scale = Math.round(this.scale * 500) / 1000;
 	if(new_scale > 0.1) {
-		this.mv_zoom(new_scale, center_x, center_y);
+		this.mv_zoom(new_scale, pointer_x, pointer_y);
 	}
 };
 
 
-Graphtool.prototype.mv_zoom = function(factor, center_x, center_y) {
-	/*if(center_x < 0) {
-		center_x = this.svg_bb.width / 2;
+Graphtool.prototype.mv_zoom = function(factor, pointer_x, pointer_y) {
+	if(pointer_x < 0) {
+		pointer_x = this.svg_bb.width / 2;
 	}
-	if(center_y < 0) {
-		center_y = this.svg_bb.height / 2;
+	if(pointer_y < 0) {
+		pointer_y = this.svg_bb.height / 2;
 	}
 
-	console.log('dimensions', this.svg_bb.width, this.svg_bb.height);
-
-	console.log('centers', center_x, center_y);
-	console.log('pos before', this.x_pos, this.y_pos);
-	console.log('factor', factor);
-	console.log('1 - scale / factor', 1 - this.scale / factor);
-
-	this.x_pos += (center_x - this.x_pos) * (1 - this.scale / factor);
-	this.y_pos += (center_y - this.y_pos) * (1 - this.scale / factor);
-
-	console.log('pos after', this.x_pos, this.y_pos);*/
+	this.x_pos = (pointer_x / this.scale) - (pointer_x / factor) + this.x_pos;
+	this.y_pos = (pointer_y / this.scale) - (pointer_y / factor) + this.y_pos;
 
 	this.scale = factor;
-
 	this.update_viewbox();
 };
 
